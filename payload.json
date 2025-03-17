@@ -1,0 +1,55 @@
+{
+    "action": "opened",
+    "number": 1,
+    "pull_request": {
+        "number": 1,
+        "url": "https://api.github.com/repos/pnp/action-pr-validator/pulls/1",
+        "id": 1,
+        "html_url": "https://github.com/pnp/action-pr-validator/pull/1",
+        "title": "Sample Pull Request",
+        "user": {
+            "login": "octocat",
+            "id": 1,
+            "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+            "url": "https://api.github.com/users/octocat"
+        },
+        "body": "This is a test pull request payload.",
+        "created_at": "2025-03-14T12:34:56Z",
+        "updated_at": "2025-03-14T12:34:56Z",
+        "state": "open",
+        "head": {
+            "ref": "feature-branch",
+            "sha": "abc123",
+            "repo": {
+                "id": 123456,
+                "name": "action-pr-validator",
+                "full_name": "pnp/action-pr-validator"
+            }
+        },
+        "base": {
+            "ref": "main",
+            "sha": "def456",
+            "repo": {
+                "id": 123456,
+                "name": "action-pr-validator",
+                "full_name": "pnp/action-pr-validator"
+            }
+        }
+    },
+    "repository": {
+        "id": 123456,
+        "name": "action-pr-validator",
+        "full_name": "pnp/action-pr-validator",
+        "owner": {
+            "login": "pnp",
+            "id": 100
+        },
+        "html_url": "https://github.com/pnp/action-pr-validator"
+    },
+    "sender": {
+        "login": "octocat",
+        "id": 1,
+        "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+        "url": "https://api.github.com/users/octocat"
+    }
+}

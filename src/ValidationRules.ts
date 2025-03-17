@@ -16,7 +16,7 @@ export interface FileRule {
 }
 
 export interface FolderRule extends ValidationRule{
-    acceptedPrefixes?: string[];
+    acceptedFolders?: string[];
 }
 
 export interface ValidationRule {

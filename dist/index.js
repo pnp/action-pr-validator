@@ -41298,19 +41298,31 @@ function run() {
             const author = pr.user.login;
             core.info(`PR author: ${author}`);
             // Check for specific tag
-            const { data: labels } = yield octokit.rest.issues.listLabelsOnIssue({
-                owner,
-                repo,
-                issue_number: prNumber,
-            });
-            core.info('Got labels');
-            const skipValidation = labels.some(label => label.name === 'skip-validation');
-            if (skipValidation) {
-                core.info('Skipping validation due to "skip-validatation" tag.');
-                return;
+            try {
+                const { data: labels } = yield octokit.rest.issues.listLabelsOnIssue({
+                    owner,
+                    repo,
+                    issue_number: prNumber,
+                });
+                core.info('Got labels');
+                const skipValidation = labels.some(label => label.name === 'skip-validation');
+                if (skipValidation) {
+                    core.info('Skipping validation due to "skip-validatation" tag.');
+                    return;
+                }
+            }
+            catch (_a) {
             }
             // Read inputs
+            core.info('Reading inputs');
             const validationRulesFile = core.getInput('validationRulesFile');
+            if (!validationRulesFile) {
+                core.setFailed('Validation rules file not set.');
+                return;
+            }
+            else {
+                core.info(`Validation rules file: ${validationRulesFile}`);
+            }
             // Post comments?
             const postComments = core.getInput('postComment') === 'true';
             // Read validation rules from JSON file
@@ -41323,7 +41335,7 @@ function run() {
             const samplesFolder = validationRules.contributionsFolder || 'samples';
             const affectsOnlyOneFolder = validationRules.limitToSingleFolder || undefined;
             const sampleFolderNameRule = validationRules.folderName;
-            const acceptedPrefix = (sampleFolderNameRule === null || sampleFolderNameRule === void 0 ? void 0 : sampleFolderNameRule.acceptedPrefixes) || [];
+            const acceptedFolders = (sampleFolderNameRule === null || sampleFolderNameRule === void 0 ? void 0 : sampleFolderNameRule.acceptedFolders) || [];
             const requireVisitorStats = validationRules.requireVisitorStats || false;
             // const sourceRepo = pr!.head.repo.full_name;
             // const baseRepo = pr!.base.repo.full_name;
@@ -41371,11 +41383,12 @@ function run() {
             }
             // Verify the sample folder name
             const sampleName = Array.from(sampleFolders)[0];
+            core.info(`Sample: ${sampleName}`);
             const samplePath = path.join(samplesFolder, sampleName);
             core.info(`Sample folder: ${samplePath}`);
             if (sampleFolderNameRule) {
                 // Make sure the sample is named correctly
-                const isValidSampleName = acceptedPrefix.some(prefix => sampleName.startsWith(prefix));
+                const isValidSampleName = acceptedFolders.some(pattern => (0, minimatch_1.minimatch)(sampleName, pattern));
                 validationResults.push({
                     success: isValidSampleName,
                     rule: sampleFolderNameRule.rule,
@@ -41456,6 +41469,7 @@ function run() {
                 }
             }
             core.setOutput('result', message);
+            core.setOutput('success', hasIssues ? 'false' : 'true');
             core.info('Validation completed and result output set.');
         }
         catch (error) {

@@ -1,50 +1,3 @@
-# @pnp/action-pr-validator
-
-Does a first pass validation of pull requests to eliminate back and forth between authors and maintainers on PnP sample repositories.
-
-## Usage
-
-### Input
-
-```yaml
- -  name: Run Validate SPFx Sample PR Action
-    uses: pnp/action-pr-validator@v1
-    with:
-        # JSON pointer to the pull request event
-        # Use ${{ toJson(github.event.pull_request) }}
-        # Required
-        pr: 
-
-        # GitHub token
-        # Required
-        gh-token:
-
-        # The path to the rules JSON file
-        # Optional. Default is:  .github/validate-sample-pr-rules.json
-        validationRuleFile:
-
-        # Wether or not to post comments
-        # Optional. Default is 'true'.
-        postComment: 
-```
-
-### Outputs
-
-Produces a message within the pull request with validation results. Message content is customizable via a handlebars template.
-
-![Example of a validation message](./assets/image.png)
-
-You can also choose to receive the results of the analysis via the `results` output.
-
-### Configuration
-
-The first thing to to is to create a `CONTRIBUTING.md` file (if you haven't done so yet) and list out the rules, with details on each rule. Make sure that each rule has a bookmark so it can be referred to within the sample validation rules `.json`.
-
-#### Example
-
-Here is the rules configuration for the sp-dev-fx-webparts repo:
-
-```json
 {
     "contributionsFolder": "samples",
     "templateLines": [
@@ -85,15 +38,15 @@ Here is the rules configuration for the sp-dev-fx-webparts repo:
     "folderName": {
         "rule": "Sample folder name follows naming convention",
         "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#sample-folder",
-        "acceptedPrefixes": [
-            "react-", 
-            "angular-", 
-            "handlebarsjs-", 
-            "jquery-", 
-            "js-", 
-            "knockout-", 
-            "vue-", 
-            "vuejs-"
+        "acceptedFolders": [
+            "react-*", 
+            "angular-*", 
+            "handlebarsjs-*", 
+            "jquery-*", 
+            "js-*", 
+            "knockout-*", 
+            "vue-*", 
+            "vuejs-*"
         ],
         "order": 2
     },
@@ -136,19 +89,3 @@ Here is the rules configuration for the sp-dev-fx-webparts repo:
         }
     ]
 }
-```
-
-You can place it in the `.github` folder and name it `validate-sample-pr-rules.json` or anywhere else in your repo and specify the path with the `validationRuleFile` parameter when calling the workflow action.
-
-TODO: Provide schema and explain the JSON structure.
-
-## Future considerations
-
-- [ ] Accept an array of glob filters for `contributionsFolder`
-- [x] Add `order` parameter to rules to control the order in which rules are listed.
-- [x] Add ability to create "forbidden" files or folder based on a glob filter (e.g.: `**\node_modules`)
-- [ ] Add deep-dive validation of `README.md` files
-- [x] Add ability to pass result back instead of creating a message
-- [x] Add ability to specify Success and Warning statuses for results table
-- [x] Add ability to specify a different message structure -- possibly with handlebars.
-- [ ] Add support for extensible IRuleValidator

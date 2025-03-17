@@ -35,22 +35,34 @@ async function run() {
         core.info(`PR author: ${author}`);
 
         // Check for specific tag
-        const { data: labels } = await octokit.rest.issues.listLabelsOnIssue({
-            owner,
-            repo,
-            issue_number: prNumber,
-        });
-        core.info('Got labels');
+        try {
+            const { data: labels } = await octokit.rest.issues.listLabelsOnIssue({
+                owner,
+                repo,
+                issue_number: prNumber,
+            });
+            core.info('Got labels');
 
 
-        const skipValidation = labels.some(label => label.name === 'skip-validation');
-        if (skipValidation) {
-            core.info('Skipping validation due to "skip-validatation" tag.');
-            return;
+            const skipValidation = labels.some(label => label.name === 'skip-validation');
+            if (skipValidation) {
+                core.info('Skipping validation due to "skip-validatation" tag.');
+                return;
+            }
+        } catch  {
+            
         }
+        
 
         // Read inputs
+        core.info('Reading inputs');
         const validationRulesFile = core.getInput('validationRulesFile');
+        if (!validationRulesFile) {
+            core.setFailed('Validation rules file not set.');
+            return;
+        } else {
+            core.info(`Validation rules file: ${validationRulesFile}`);
+        }
 
         // Post comments?
         const postComments = core.getInput('postComment') === 'true';
@@ -66,7 +78,7 @@ async function run() {
         const samplesFolder = validationRules.contributionsFolder || 'samples';
         const affectsOnlyOneFolder = validationRules.limitToSingleFolder || undefined;
         const sampleFolderNameRule = validationRules.folderName;
-        const acceptedPrefix = sampleFolderNameRule?.acceptedPrefixes || [];
+        const acceptedFolders = sampleFolderNameRule?.acceptedFolders || [];
         const requireVisitorStats = validationRules.requireVisitorStats || false;
 
 
@@ -123,12 +135,13 @@ async function run() {
 
         // Verify the sample folder name
         const sampleName = Array.from(sampleFolders)[0];
+        core.info(`Sample: ${sampleName}`);
         const samplePath = path.join(samplesFolder, sampleName);
         core.info(`Sample folder: ${samplePath}`);
 
         if (sampleFolderNameRule) {
             // Make sure the sample is named correctly
-            const isValidSampleName = acceptedPrefix.some(prefix => sampleName.startsWith(prefix));
+            const isValidSampleName = acceptedFolders.some(pattern => minimatch(sampleName, pattern));
             validationResults.push({
                 success: isValidSampleName,
                 rule: sampleFolderNameRule.rule,
@@ -221,6 +234,8 @@ async function run() {
             }
         }
         core.setOutput('result', message);
+        core.setOutput('success', hasIssues ? 'false': 'true');
+
         core.info('Validation completed and result output set.');
 
     } catch (error: any) {
