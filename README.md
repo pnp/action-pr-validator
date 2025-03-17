@@ -36,6 +36,10 @@ Produces a message within the pull request with validation results. Message cont
 
 You can also choose to receive the results of the analysis via the `results` output.
 
+#### valid
+
+`true` if all rules passed, `false` otherwise.
+
 ### Configuration
 
 The first thing to to is to create a `CONTRIBUTING.md` file (if you haven't done so yet) and list out the rules, with details on each rule. Make sure that each rule has a bookmark so it can be referred to within the sample validation rules `.json`.
