@@ -41469,7 +41469,7 @@ function run() {
                 }
             }
             core.setOutput('result', message);
-            core.setOutput('success', hasIssues ? 'false' : 'true');
+            core.setOutput('valid', hasIssues ? 'false' : 'true');
             core.info('Validation completed and result output set.');
         }
         catch (error) {
