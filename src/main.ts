@@ -184,6 +184,14 @@ async function run() {
             }
         }
 
+        // Combine base branch files with PR files
+        const baseBranch = pr.base.ref;
+        const baseFiles = await getBaseBranchFiles(octokit, owner, repo, baseBranch, samplesFolder);
+        const combinedFiles = new Set([...baseFiles, ...sampleFiles]);
+
+        core.info(`Combined files for validation: ${Array.from(combinedFiles).join(', ')}`);
+
+
         // Validate files based on rules
         if (validationRules.fileRules) {
             for (const { require, forbid, rule, href, order } of validationRules.fileRules) {
@@ -194,7 +202,7 @@ async function run() {
                     continue;
                 }
                 const fullPath = path.join(samplesFolder, sampleName, pattern);
-                const fileExists = sampleFiles.some(f => minimatch(f, fullPath));
+                const fileExists = Array.from(combinedFiles).some(f => minimatch(f, fullPath));
                 const isValid = isExclude ? !fileExists : fileExists;
                 core.info(`${rule} exists: ${fileExists} valid: ${isValid}`);
                 validationResults.push({
@@ -260,6 +268,28 @@ async function getFileContent(octokit: any, owner: string, repo: string, path: s
         core.error(`Error fetching content from ${path}: ${error}`);
     }
     return null;
+}
+
+// Fetch files from the base branch
+async function getBaseBranchFiles(octokit: any, owner: string, repo: string, baseBranch: string, folder: string): Promise<string[]> {
+    const files: string[] = [];
+    try {
+        const { data: tree } = await octokit.rest.git.getTree({
+            owner,
+            repo,
+            tree_sha: baseBranch,
+            recursive: true,
+        });
+
+        for (const item of tree.tree) {
+            if (item.type === 'blob' && item.path.startsWith(folder)) {
+                files.push(item.path);
+            }
+        }
+    } catch (error) {
+        core.error(`Error fetching files from base branch: ${error}`);
+    }
+    return files;
 }
 
 run();
