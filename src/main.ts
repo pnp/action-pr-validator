@@ -1,12 +1,15 @@
-import { ValidationResult } from './ValidationResult';
+import { IConfiguration } from './IConfiguration';
+import { IValidationResult } from './IValidationResult';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getInput } from "@actions/core";
-import { ValidationRules } from './ValidationRules';
 import { minimatch } from 'minimatch';
 import handlebars from 'handlebars';
+import { IValidationRule } from './IValidationRule';
+import { IFolderNameRule } from './IFolderNameRule';
+import { IFileRule } from './IFileRule';
 
 async function run() {
     try {
@@ -68,18 +71,22 @@ async function run() {
         const postComments = core.getInput('postComment') === 'true';
 
         // Read validation rules from JSON file
-        const validationRules: ValidationRules = JSON.parse(fs.readFileSync(validationRulesFile, 'utf8'));
-        if (!validationRules) {
+        const configuration: IConfiguration = JSON.parse(fs.readFileSync(validationRulesFile, 'utf8'));
+        if (!configuration) {
             core.setFailed('Validation rules not found.');
             return;
         }
         core.info('Got rules');
 
-        const samplesFolder = validationRules.contributionsFolder || 'samples';
-        const affectsOnlyOneFolder = validationRules.limitToSingleFolder || undefined;
-        const sampleFolderNameRule = validationRules.folderName;
-        const acceptedFolders = sampleFolderNameRule?.acceptedFolders || [];
-        const requireVisitorStats = validationRules.requireVisitorStats || false;
+        const samplesFolder = configuration.contributionsFolder || 'samples';
+
+        const rules = configuration.rules;
+ 
+        const affectsOnlyOneFolder: IValidationRule = rules["limitToSingleFolder"] || undefined;
+        const sampleFolderNameRule: IFolderNameRule = rules["folderName"] || undefined;
+        const acceptedFolders:string[] = sampleFolderNameRule?.acceptedFolders || [];
+        const requireVisitorStats: IValidationRule = rules["requireVisitorStats"] || false;
+        const fileRules: IFileRule[] = configuration.fileRules || [];
 
 
         // const sourceRepo = pr!.head.repo.full_name;
@@ -116,7 +123,7 @@ async function run() {
         core.info(`Affected sample folders: ${Array.from(sampleFolders).join(', ')}`);
 
         // Build validation messages
-        const validationResults = new Array<ValidationResult>();
+        const validationResults = new Array<IValidationResult>();
         // Verify that only one folder is affected
         if (affectsOnlyOneFolder) {
             // Check if there are any files outside the "samples/" folder
@@ -193,8 +200,8 @@ async function run() {
 
 
         // Validate files based on rules
-        if (validationRules.fileRules) {
-            for (const { require, forbid, rule, href, order } of validationRules.fileRules) {
+        if (fileRules) {
+            for (const { require, forbid, rule, href, order } of fileRules) {
                 const pattern = require || forbid;
                 const isExclude = !!forbid;
                 if (!pattern) {
@@ -217,7 +224,7 @@ async function run() {
         // Set hasIssues based on validationMessage items
         const hasIssues = validationResults.some(message => !message.success);
 
-        const templateSource = validationRules.templateLines.join('\n');
+        const templateSource = configuration.templateLines.join('\n');
         const template = handlebars.compile(templateSource);
 
         const data = {

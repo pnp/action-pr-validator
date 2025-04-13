@@ -1,4 +1,4 @@
-export interface ValidationResult {
+export interface IValidationResult {
     success: boolean;
     rule: string;
     href: string;
