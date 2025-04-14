@@ -14,6 +14,7 @@ class LimitToSingleFolderValidator {
     constructor(rule, context) {
         this.rule = rule;
         this.context = context;
+        this.name = 'limitToSingleFolder';
     }
     validate() {
         return __awaiter(this, void 0, void 0, function* () {

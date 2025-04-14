@@ -14,6 +14,7 @@ class RequireVisitorStatsValidator {
     constructor(rule, context) {
         this.rule = rule;
         this.context = context;
+        this.name = 'requireVisitorStats';
     }
     validate() {
         return __awaiter(this, void 0, void 0, function* () {
