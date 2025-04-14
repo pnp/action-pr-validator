@@ -41406,6 +41406,7 @@ class ReadmeStructureValidator {
             const { octokit, owner, repo, sampleFiles, samplesFolder, sampleName, prSha } = this.context;
             const readmeFile = sampleFiles.find(f => f === `${samplesFolder}/${sampleName}/README.md`);
             const hasReadme = readmeFile !== undefined;
+            const notes = [];
             let isValidStructure = false;
             if (hasReadme) {
                 try {
@@ -41446,11 +41447,20 @@ class ReadmeStructureValidator {
             else {
                 this.logger.warning(`README.md not found in the sample folder: ${samplesFolder}/${sampleName}`);
             }
+            // Test note
+            notes.push({
+                file: readmeFile,
+                severity: 'Suggestion',
+                location: 'Line 1, Column 1',
+                rule: 'duplicate-alt-text',
+                message: `Error reading README.md`,
+            });
             return {
                 success: isValidStructure,
                 rule: this.rule.rule,
                 href: this.rule.href,
                 order: this.rule.order,
+                notes
             };
         });
     }
@@ -41710,16 +41720,28 @@ function run() {
                     core.warning(`Unknown validator: ${ruleName}`);
                     continue;
                 }
-                else {
-                    core.info(`Validating ${ruleName}`);
-                    const result = yield validator.validate();
-                    if (!result) {
-                        core.warning(`Validator ${ruleName} returned null result`);
-                        continue;
-                    }
-                    core.info(`Rule: ${result.rule} valid: ${result.success}\n`);
-                    validationResults.push(result);
+                core.info(`Validating ${ruleName}`);
+                const result = yield validator.validate();
+                if (!result) {
+                    core.warning(`Validator ${ruleName} returned null result`);
+                    continue;
                 }
+                // Log the validation result
+                core.info(`Rule: ${result.rule} valid: ${result.success}\n`);
+                // Log validation notes
+                if (result.notes && result.notes.length > 0) {
+                    core.info(`Validation notes for rule: ${result.rule}`);
+                    for (const note of result.notes) {
+                        core.info(`- File: ${note.file}`);
+                        if (note.location) {
+                            core.info(`  Location: ${note.location}`);
+                        }
+                        core.info(`  Severity: ${note.severity}`);
+                        core.info(`  Rule: ${note.rule}`);
+                        core.info(`  Message: ${note.message}`);
+                    }
+                }
+                validationResults.push(result);
             }
             // Validate files based on rules
             core.info(`\nFile rules\n========================`);
@@ -41745,11 +41767,17 @@ function run() {
             }
             // Set hasIssues based on validationMessage items
             const hasIssues = validationResults.some(message => !message.success);
+            // See if there are any validation notes with severity "Suggestion"
+            const hasSuggestions = validationResults.some(message => { var _a; return (_a = message.notes) === null || _a === void 0 ? void 0 : _a.some(note => note.severity === 'Suggestion'); });
+            if (hasSuggestions) {
+                core.info('There are suggestions in the validation results.');
+            }
             const templateSource = configuration.templateLines.join('\n');
             const template = handlebars_1.default.compile(templateSource);
             const data = {
                 validationResults,
                 hasIssues,
+                hasSuggestions,
                 prNumber,
                 author
             };

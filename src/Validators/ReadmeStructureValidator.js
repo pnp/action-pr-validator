@@ -23,6 +23,7 @@ class ReadmeStructureValidator {
             const { octokit, owner, repo, sampleFiles, samplesFolder, sampleName, prSha } = this.context;
             const readmeFile = sampleFiles.find(f => f === `${samplesFolder}/${sampleName}/README.md`);
             const hasReadme = readmeFile !== undefined;
+            const notes = [];
             let isValidStructure = false;
             if (hasReadme) {
                 try {
@@ -63,11 +64,20 @@ class ReadmeStructureValidator {
             else {
                 this.logger.warning(`README.md not found in the sample folder: ${samplesFolder}/${sampleName}`);
             }
+            // Test note
+            notes.push({
+                file: readmeFile,
+                severity: 'Suggestion',
+                location: 'Line 1, Column 1',
+                rule: 'duplicate-alt-text',
+                message: `Error reading README.md`,
+            });
             return {
                 success: isValidStructure,
                 rule: this.rule.rule,
                 href: this.rule.href,
                 order: this.rule.order,
+                notes
             };
         });
     }

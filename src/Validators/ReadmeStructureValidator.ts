@@ -1,6 +1,7 @@
 import { IValidator } from '../IValidator';
 import { IValidationResult } from '../IValidationResult';
 import { IValidationRule } from '../IValidationRule';
+import { IValidationNote } from '../IValidationNote';
 
 export class ReadmeStructureValidator implements IValidator {
     constructor(
@@ -24,6 +25,7 @@ export class ReadmeStructureValidator implements IValidator {
 
         const readmeFile = sampleFiles.find(f => f === `${samplesFolder}/${sampleName}/README.md`);
         const hasReadme = readmeFile !== undefined;
+        const notes: IValidationNote[] = [];
         let isValidStructure = false;
 
         if (hasReadme) {
@@ -65,11 +67,21 @@ export class ReadmeStructureValidator implements IValidator {
             this.logger.warning(`README.md not found in the sample folder: ${samplesFolder}/${sampleName}`);
         }
 
+        // Test note
+        notes.push({
+            file: readmeFile!,
+            severity: 'Suggestion',
+            location: 'Line 1, Column 1',
+            rule: 'duplicate-alt-text',
+            message: `Error reading README.md`,
+        });
+
         return {
             success: isValidStructure,
             rule: this.rule.rule,
             href: this.rule.href,
             order: this.rule.order,
+            notes
         };
     }
 
