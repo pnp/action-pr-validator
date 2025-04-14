@@ -76,30 +76,32 @@ Here is the rules configuration for the sp-dev-fx-webparts repo:
         "For more information, see the [contribution guidance](https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md).",
         "{{/if}}"
     ],
-    "limitToSingleFolder": {
-        "rule": "Pull request affects only one folder",
-        "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#typos-issues-bugs-and-contributions",
-        "order": 1
-    },
-    "requireVisitorStats": {
-        "rule": "README.md contains visitor stat image",
-        "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#visitor-stats-image",
-        "order": 4
-    },
-    "folderName": {
-        "rule": "Sample folder name follows naming convention",
-        "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#sample-folder",
-        "acceptedPrefixes": [
-            "react-", 
-            "angular-", 
-            "handlebarsjs-", 
-            "jquery-", 
-            "js-", 
-            "knockout-", 
-            "vue-", 
-            "vuejs-"
-        ],
-        "order": 2
+    "rules": {
+        "limitToSingleFolder": {
+            "rule": "Pull request affects only one folder",
+            "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#typos-issues-bugs-and-contributions",
+            "order": 1
+        },
+        "requireVisitorStats": {
+            "rule": "README.md contains visitor stat image",
+            "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#visitor-stats-image",
+            "order": 4
+        },
+        "folderName": {
+            "rule": "Sample folder name follows naming convention",
+            "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#sample-folder",
+            "acceptedFolders": [
+                "react-*",
+                "angular-*",
+                "handlebarsjs-*",
+                "jquery-*",
+                "js-*",
+                "knockout-*",
+                "vue-*",
+                "vuejs-*"
+            ],
+            "order": 2
+        }
     },
     "fileRules": [
         {
@@ -150,9 +152,11 @@ TODO: Provide schema and explain the JSON structure.
 
 - [ ] Accept an array of glob filters for `contributionsFolder`
 - [x] Add `order` parameter to rules to control the order in which rules are listed.
-- [x] Add ability to create "forbidden" files or folder based on a glob filter (e.g.: `**\node_modules`)
+- [x] Add ability to create "forbidden" files or folder based on a glob filter (e.g.: `**\node_modules`, `**\lib`, `*.sppkg`, etc.)
 - [ ] Add deep-dive validation of `README.md` files
 - [x] Add ability to pass result back instead of creating a message
 - [x] Add ability to specify Success and Warning statuses for results table
-- [x] Add ability to specify a different message structure -- possibly with handlebars.
-- [ ] Add support for extensible IRuleValidator
+- [x] Add ability to specify a different message structure with handlebars.
+- [x] Add support for extensible `IValidator`
+- [ ] Add support for **Suggestion** status
+- [ ] Add support for **Details** links

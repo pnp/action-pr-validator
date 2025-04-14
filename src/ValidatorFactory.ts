@@ -2,6 +2,7 @@ import { ValidatorRegistry } from './ValidatorRegistry';
 import { IValidator } from './IValidator';
 import { IValidationRule } from './IValidationRule';
 import { IFolderNameRule } from './IFolderNameRule';
+import * as core from '@actions/core';
 
 export class ValidatorFactory {
     static createValidator(
@@ -15,6 +16,6 @@ export class ValidatorFactory {
         }
 
         // Dynamically instantiate the validator with the required dependencies
-        return new ValidatorClass(ruleConfig, context);
+        return new ValidatorClass(ruleConfig, context, core); // Pass `core` as the logger
     }
 }

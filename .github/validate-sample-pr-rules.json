@@ -36,6 +36,48 @@
             "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#visitor-stats-image",
             "order": 4
         },
+        "readmeStructure": {
+            "rule": "README.md follows the provided template",
+            "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#readmemd",
+            "order": 5,
+            "maxValidation": 2,
+            "requiredHeaders": [
+                {
+                    "markdown": "# .*", 
+                    "regex": "^# .+"
+                },
+                {
+                    "markdown": "## Summary"
+                },
+                {
+                    "markdown": "## Compatibility"
+                },
+                {
+                    "markdown": "## Applies to"
+                },
+                {
+                    "markdown": "## Contributors"
+                },
+                {
+                    "markdown": "## Version history"
+                },
+                {
+                    "markdown": "## Prerequisites"
+                },
+                {
+                    "markdown": "## Minimal path to awesome"
+                },
+                {
+                    "markdown": "## Features"
+                },
+                {
+                    "markdown": "## Help"
+                },
+                {
+                    "markdown": "## Disclaimer"
+                }
+            ]
+        },
         "folderName": {
             "rule": "Sample folder name follows naming convention",
             "href": "https://github.com/pnp/sp-dev-fx-webparts/blob/main/CONTRIBUTING.md#sample-folder",

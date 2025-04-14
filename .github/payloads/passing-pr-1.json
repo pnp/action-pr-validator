@@ -19,7 +19,7 @@
         "state": "open",
         "head": {
             "ref": "feature-branch",
-            "sha": "09f3b0eed84d93fbf559af9ac1ada900a5d7bd45",
+            "sha": "c1b3614f455719eb319ef16ad7e668c9826b56fe",
             "repo": {
                 "id": 123456,
                 "name": "action-pr-validator",
