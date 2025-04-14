@@ -23,7 +23,7 @@ export class ReadmeStructureValidator implements IValidator {
     async validate(): Promise<IValidationResult> {
         const { octokit, owner, repo, sampleFiles, samplesFolder, sampleName, prSha } = this.context;
 
-        const readmeFile = sampleFiles.find(f => f === `${samplesFolder}/${sampleName}/README.md`);
+        const readmeFile = sampleFiles.find(f => f.endsWith('README.md')); 
         const hasReadme = readmeFile !== undefined;
         const notes: IValidationNote[] = [];
         let isValidStructure = false;
@@ -54,27 +54,25 @@ export class ReadmeStructureValidator implements IValidator {
                             return this.rule.maxValidation ? header.level <= this.rule.maxValidation : true;
                         });
 
-                    this.logger.info(`Extracted headers: ${JSON.stringify(headers)}`);
-
                     // Check if headers match the required structure
                     const requiredHeaders = this.rule.requiredHeaders;
                     isValidStructure = this.validateHeaders(headers, requiredHeaders);
                 }
             } catch (error) {
-                this.logger.error(`Error reading README.md: ${error}`);
+                this.logger.warning(`Error reading README.md: ${error}`);
             }
         } else {
             this.logger.warning(`README.md not found in the sample folder: ${samplesFolder}/${sampleName}`);
         }
 
-        // Test note
-        notes.push({
-            file: readmeFile!,
-            severity: 'Suggestion',
-            location: 'Line 1, Column 1',
-            rule: 'duplicate-alt-text',
-            message: `Error reading README.md`,
-        });
+        // If you need to create validation notes, you can do so here
+        // notes.push({
+        //     file: readmeFile!,
+        //     severity: 'Suggestion',
+        //     location: 'Line 1, Column 1',
+        //     rule: 'duplicate-alt-text',
+        //     message: `This is only a test validation note.`,
+        // });
 
         return {
             success: isValidStructure,

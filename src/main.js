@@ -207,17 +207,40 @@ function run() {
                     });
                 }
             }
+            // Sort validationResults by the 'order' property
+            validationResults.sort((a, b) => (a.order || 0) - (b.order || 0));
             // Set hasIssues based on validationMessage items
             const hasIssues = validationResults.some(message => !message.success);
             // See if there are any validation notes with severity "Suggestion"
             const hasSuggestions = validationResults.some(message => { var _a; return (_a = message.notes) === null || _a === void 0 ? void 0 : _a.some(note => note.severity === 'Suggestion'); });
-            if (hasSuggestions) {
-                core.info('There are suggestions in the validation results.');
-            }
+            // Create an array of validation notes with filename, file URL, and validation results
+            const validationNotes = validationResults.reduce((acc, result) => {
+                if (result.notes) {
+                    for (const note of result.notes) {
+                        // Generate the file URL for the pull request
+                        const fileUrl = `https://github.com/${owner}/${repo}/pull/${prNumber}/files#diff-${Buffer.from(note.file).toString('hex')}`;
+                        // Check if the file is already in the array
+                        let fileEntry = acc.find(entry => entry.fileName === note.file);
+                        if (!fileEntry) {
+                            fileEntry = {
+                                fileName: note.file,
+                                fileUrl,
+                                validationResults: [],
+                            };
+                            acc.push(fileEntry);
+                        }
+                        // Add the validation result to the file entry
+                        fileEntry.validationResults.push(result);
+                    }
+                }
+                return acc;
+            }, []);
+            core.info(`Validation notes array: ${JSON.stringify(validationNotes)}`);
             const templateSource = configuration.templateLines.join('\n');
             const template = handlebars_1.default.compile(templateSource);
             const data = {
                 validationResults,
+                validationNotes,
                 hasIssues,
                 hasSuggestions,
                 prNumber,
@@ -237,6 +260,7 @@ function run() {
             // Set outputs for the action
             core.setOutput('result', message);
             core.setOutput('valid', hasIssues ? 'false' : 'true');
+            core.setOutput('suggestions', hasSuggestions ? 'true' : 'false');
             // We done here
             core.info('Validation completed.');
         }

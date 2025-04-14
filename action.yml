@@ -21,6 +21,8 @@ outputs:
     description: 'The validation result message'
   valid:
     description: "Indicates whether the pull request validated successfully."
+  suggestions:
+    description: "Indicates whether the pull request has suggestions."
 runs:
   using: 'node20'
   main: 'dist/index.js'
