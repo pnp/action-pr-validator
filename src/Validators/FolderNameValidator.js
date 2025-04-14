@@ -12,15 +12,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FolderNameValidator = void 0;
 const minimatch_1 = require("minimatch");
 class FolderNameValidator {
-    constructor(rule, sampleName) {
+    constructor(rule, context) {
         this.rule = rule;
-        this.sampleName = sampleName;
+        this.context = context;
     }
     validate() {
         return __awaiter(this, void 0, void 0, function* () {
+            const { sampleName } = this.context;
             const acceptedFolders = this.rule.acceptedFolders || [];
-            const isValidSampleName = acceptedFolders.some(pattern => (0, minimatch_1.minimatch)(this.sampleName, pattern));
-            return isValidSampleName;
+            const isValidSampleName = acceptedFolders.some(pattern => (0, minimatch_1.minimatch)(sampleName, pattern));
+            return {
+                success: isValidSampleName,
+                rule: this.rule.rule,
+                href: this.rule.href,
+                order: this.rule.order,
+            };
         });
     }
 }

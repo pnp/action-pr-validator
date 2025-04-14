@@ -1,3 +1,6 @@
+import { IValidationResult } from './IValidationResult';
+
 export interface IValidator {
-    validate(): Promise<boolean>;
+    validate(): Promise<IValidationResult>;
+    name: string;
 }

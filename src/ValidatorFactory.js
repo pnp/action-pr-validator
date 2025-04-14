@@ -1,18 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ValidatorFactory = void 0;
-const LimitToSingleFolderValidator_1 = require("./Validators/LimitToSingleFolderValidator");
-const FolderNameValidator_1 = require("./Validators/FolderNameValidator");
+const ValidatorRegistry_1 = require("./ValidatorRegistry");
 class ValidatorFactory {
     static createValidator(ruleName, ruleConfig, context) {
-        switch (ruleName) {
-            case 'limitToSingleFolder':
-                return new LimitToSingleFolderValidator_1.LimitToSingleFolderValidator(context.files, context.samplesFolder, context.sampleFolders);
-            case 'folderName':
-                return new FolderNameValidator_1.FolderNameValidator(ruleConfig, context.sampleName);
-            default:
-                return null; // Unknown rule
+        const ValidatorClass = ValidatorRegistry_1.ValidatorRegistry[ruleName];
+        if (!ValidatorClass) {
+            return null; // Unknown rule
         }
+        // Dynamically instantiate the validator with the required dependencies
+        return new ValidatorClass(ruleConfig, context);
     }
 }
 exports.ValidatorFactory = ValidatorFactory;

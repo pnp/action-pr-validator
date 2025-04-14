@@ -8,8 +8,7 @@ import { getInput } from "@actions/core";
 import { minimatch } from 'minimatch';
 import handlebars from 'handlebars';
 import { ValidatorFactory } from './ValidatorFactory';
-import { IValidationRule } from './IValidationRule';
-import { IFolderNameRule } from './IFolderNameRule';
+
 import { IFileRule } from './IFileRule';
 
 async function run() {
@@ -20,9 +19,7 @@ async function run() {
             return;
         }
 
-        core.info('Got token');
         const octokit = github.getOctokit(token);
-        core.info('Got oktokit');
 
         const { context } = github;
         const pr = context.payload.pull_request;
@@ -30,7 +27,8 @@ async function run() {
             core.setFailed('This action only runs on pull requests.');
             return;
         }
-        core.info('Got PR');
+
+        // Get the PR info
         const { owner, repo } = context.repo;
         const prNumber = pr.number;
 
@@ -38,15 +36,13 @@ async function run() {
         const author = pr.user.login;
         core.info(`PR author: ${author}`);
 
-        // Check for specific tag
+        // To see if we should skip validation, check if the PR has a label "skip-validation"
         try {
             const { data: labels } = await octokit.rest.issues.listLabelsOnIssue({
                 owner,
                 repo,
                 issue_number: prNumber,
             });
-            core.info('Got labels');
-
 
             const skipValidation = labels.some(label => label.name === 'skip-validation');
             if (skipValidation) {
@@ -56,10 +52,8 @@ async function run() {
         } catch  {
             
         }
-        
 
         // Read inputs
-        core.info('Reading inputs');
         const validationRulesFile = core.getInput('validationRulesFile');
         if (!validationRulesFile) {
             core.setFailed('Validation rules file not set.');
@@ -77,21 +71,10 @@ async function run() {
             core.setFailed('Validation rules not found.');
             return;
         }
-        core.info('Got rules');
 
         const samplesFolder = configuration.contributionsFolder || 'samples';
-
         const rules = configuration.rules;
- 
-        // const affectsOnlyOneFolder: IValidationRule = rules["limitToSingleFolder"] || undefined;
-        // const sampleFolderNameRule: IFolderNameRule = rules["folderName"] || undefined;
-        // const acceptedFolders:string[] = sampleFolderNameRule?.acceptedFolders || [];
-        // const requireVisitorStats: IValidationRule = rules["requireVisitorStats"] || false;
         const fileRules: IFileRule[] = configuration.fileRules || [];
-
-
-        // const sourceRepo = pr!.head.repo.full_name;
-        // const baseRepo = pr!.base.repo.full_name;
 
         // Get list of files changed in the PR
         const { data: files } = await octokit.rest.pulls
@@ -101,16 +84,13 @@ async function run() {
                 pull_number: prNumber,
             });
 
-        core.info('Got files');
-
-        core.info(`PR #${prNumber} has ${files.length} files changed.`);
+        core.info(`\nPR #${prNumber} has ${files.length} files changed.`);
         for (const file of files) {
             core.info(`- ${file.filename}`);
         }
 
         // Filter to files under "samples/"
         const sampleFiles = files.map(f => f.filename).filter(f => f.startsWith(`${samplesFolder}/`));
-        core.info(`Changed ${sampleFiles.length} files under the "${samplesFolder}" folder.`);
 
         // Determine the sample folders (considering full path structure)
         const sampleFolders = new Set<string>();
@@ -121,103 +101,56 @@ async function run() {
                 sampleFolders.add(parts[0]);
             }
         });
-        core.info(`Affected sample folders: ${Array.from(sampleFolders).join(', ')}`);
 
         // Build validation messages
-        const validationResults = new Array<IValidationResult>();
-        // Verify that only one folder is affected
-        // if (affectsOnlyOneFolder) {
-        //     // Check if there are any files outside the "samples/" folder
-        //     const filesOutsideSamples = files.map(f => f.filename).filter(f => !f.startsWith(`${samplesFolder}/`));
-        //     if (filesOutsideSamples.length > 0) {
-        //         core.info(`Contains files outside the "${samplesFolder}" folder.`);
-        //     }
-        //     const onlyOneFolder = sampleFolders.size === 1 && filesOutsideSamples.length === 0;
-        //     validationResults.push({
-        //         success: onlyOneFolder,
-        //         rule: affectsOnlyOneFolder.rule,
-        //         href: affectsOnlyOneFolder.href,
-        //         order: affectsOnlyOneFolder.order,
-        //     });
-        // }
+        const validationResults = new Array<IValidationResult>();  
 
         // Verify the sample folder name
         const sampleName = Array.from(sampleFolders)[0];
         core.info(`Sample: ${sampleName}`);
         const samplePath = path.join(samplesFolder, sampleName);
         core.info(`Sample folder: ${samplePath}`);
-
-        // if (sampleFolderNameRule) {
-        //     // Make sure the sample is named correctly
-        //     const isValidSampleName = acceptedFolders.some(pattern => minimatch(sampleName, pattern));
-        //     validationResults.push({
-        //         success: isValidSampleName,
-        //         rule: sampleFolderNameRule.rule,
-        //         href: sampleFolderNameRule.href,
-        //         order: sampleFolderNameRule.order,
-        //     });
-
-        //     core.info(`Sample name is valid: ${isValidSampleName}`);
-        // }
-
-        // Validate README.md content
-        // if (requireVisitorStats) {
-        //     const readmeFile = sampleFiles.find(f => f === path.join(samplesFolder, sampleName, 'README.md'));
-        //     const hasReadme = readmeFile !== undefined;
-        //     var hasImageTracker = false;
-        //     core.info(`README.md exists: ${hasReadme}`);
-        //     if (hasReadme) {
-
-        //         try {
-        //             const readmeContent = await getFileContent(octokit, owner, repo, readmeFile, pr.head.sha);
-        //             if (readmeContent) {
-        //                 core.info(`README.md content: ${readmeContent}`);
-        //                 const lines = readmeContent.split('\n');
-        //                 hasImageTracker = lines.some(line => line.trim().startsWith('<img src="https://m365-visitor-stats.azurewebsites.net/'));
-        //                 core.info(`Visitor stats image in README.md: ${hasImageTracker}`);
-
-        //                 validationResults.push({
-        //                     success: hasImageTracker,
-        //                     rule: requireVisitorStats.rule,
-        //                     href: requireVisitorStats.href,
-        //                     order: requireVisitorStats.order,
-        //                 });
-        //             } else {
-        //                 core.warning(`Can't read README.md content.`);
-        //             }
-        //         } catch (error) {
-        //             core.warning(`Error reading README.md: ${error}`);
-
-        //         }
-        //     }
-        // }
-
         
         // Combine base branch files with PR files
         const baseBranch = pr.base.ref;
         const baseFiles = await getBaseBranchFiles(octokit, owner, repo, baseBranch, samplesFolder);
         const combinedFiles = new Set([...baseFiles, ...sampleFiles]);
 
-        core.info(`Combined files for validation: ${Array.from(combinedFiles).join(', ')}`);
+        // Prepare the context object for validators
+        const validatorContext = {
+            octokit,
+            owner,
+            repo,
+            files: files.map(f => f.filename),
+            sampleFiles,
+            samplesFolder,
+            sampleFolders,
+            sampleName,
+            prSha: pr.head.sha,
+        };
 
         // Dynamically create and execute validators
+        core.info(`\nRules\n========================`);
         for (const [ruleName, ruleConfig] of Object.entries(rules)) {
-            const validator = ValidatorFactory.createValidator(ruleName, ruleConfig, {
-                files: files.map(f => f.filename),
-                samplesFolder,
-                sampleFolders,
-                sampleName,
-            });
-
-            if (validator) {
+            const validator = ValidatorFactory.createValidator(ruleName, ruleConfig, validatorContext);
+            if (!validator) {
+                core.warning(`Unknown validator: ${ruleName}`);
+                continue;
+            } else {
+                core.info(`Validating ${ruleName}`);
                 const result = await validator.validate();
-                validationResults.push({rule: ruleName, success: result, href: ruleConfig.href, order: ruleConfig.order});
-                core.info(`Validation result for ${ruleName}: ${result}`);
+                if (!result) {
+                    core.warning(`Validator ${ruleName} returned null result`);
+                    continue;
+                }
+                core.info(`Rule: ${result.rule} valid: ${result.success}\n`); 
+                validationResults.push(result);
             }
         }
 
-
         // Validate files based on rules
+        core.info(`\nFile rules\n========================`);
+
         if (fileRules) {
             for (const { require, forbid, rule, href, order } of fileRules) {
                 const pattern = require || forbid;
@@ -241,7 +174,6 @@ async function run() {
 
         // Set hasIssues based on validationMessage items
         const hasIssues = validationResults.some(message => !message.success);
-
         const templateSource = configuration.templateLines.join('\n');
         const template = handlebars.compile(templateSource);
 
@@ -254,6 +186,7 @@ async function run() {
 
         const message = template(data);
 
+        // Should we post a comment to the PR?
         if (postComments) {
             try {
                 // Post a comment to the PR with the results
@@ -266,10 +199,13 @@ async function run() {
                 core.warning(`Error posting comment: ${error}`);
             }
         }
+
+        // Set outputs for the action
         core.setOutput('result', message);
         core.setOutput('valid', hasIssues ? 'false': 'true');
 
-        core.info('Validation completed and result output set.');
+        // We done here
+        core.info('Validation completed.');
 
     } catch (error: any) {
         core.setFailed(error.message);

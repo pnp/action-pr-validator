@@ -1,0 +1,65 @@
+{
+    "action": "opened",
+    "number": 2,
+    "pull_request": {
+        "number": 2,
+        "url": "https://api.github.com/repos/pnp/action-pr-validator/pulls/2",
+        "id": 2,
+        "html_url": "https://github.com/pnp/action-pr-validator/pull/2",
+        "title": "Sample Pull Request",
+        "user": {
+            "login": "octocat",
+            "id": 1,
+            "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+            "url": "https://api.github.com/users/octocat"
+        },
+        "body": "This is a test pull request payload.",
+        "created_at": "2025-03-14T12:34:56Z",
+        "updated_at": "2025-03-14T12:34:56Z",
+        "state": "open",
+        "head": {
+            "ref": "feature-branch",
+            "sha": "a82514a2ec465865645c9ab1fcc524054bbe97c2",
+            "repo": {
+                "id": 123456,
+                "name": "action-pr-validator",
+                "full_name": "pnp/action-pr-validator"
+            }
+        },
+        "base": {
+            "ref": "main",
+            "sha": "def456",
+            "repo": {
+                "id": 123456,
+                "name": "action-pr-validator",
+                "full_name": "pnp/action-pr-validator"
+            }
+        }
+    },
+    "commits": [
+        {
+            "sha": "a82514a2ec465865645c9ab1fcc524054bbe97c2",
+            "message": "Initial commit for feature branch"
+        },
+        {
+            "sha": "4f329381f8bc2aae0fc0bb71f05ef36a6c24e6af",
+            "message": "Fix bug in feature implementation"
+        }
+    ],
+    "repository": {
+        "id": 123456,
+        "name": "action-pr-validator",
+        "full_name": "pnp/action-pr-validator",
+        "owner": {
+            "login": "pnp",
+            "id": 100
+        },
+        "html_url": "https://github.com/pnp/action-pr-validator"
+    },
+    "sender": {
+        "login": "octocat",
+        "id": 1,
+        "avatar_url": "https://github.com/images/error/octocat_happy.gif",
+        "url": "https://api.github.com/users/octocat"
+    }
+}

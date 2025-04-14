@@ -11,16 +11,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LimitToSingleFolderValidator = void 0;
 class LimitToSingleFolderValidator {
-    constructor(files, samplesFolder, sampleFolders) {
-        this.files = files;
-        this.samplesFolder = samplesFolder;
-        this.sampleFolders = sampleFolders;
+    constructor(rule, context) {
+        this.rule = rule;
+        this.context = context;
     }
     validate() {
         return __awaiter(this, void 0, void 0, function* () {
-            const filesOutsideSamples = this.files.filter(f => !f.startsWith(`${this.samplesFolder}/`));
-            const onlyOneFolder = this.sampleFolders.size === 1 && filesOutsideSamples.length === 0;
-            return onlyOneFolder;
+            const { files, samplesFolder, sampleFolders } = this.context;
+            const filesOutsideSamples = files.filter(f => !f.startsWith(`${samplesFolder}/`));
+            const onlyOneFolder = sampleFolders.size === 1 && filesOutsideSamples.length === 0;
+            return {
+                success: onlyOneFolder,
+                rule: this.rule.rule,
+                href: this.rule.href,
+                order: this.rule.order,
+            };
         });
     }
 }
