@@ -41270,10 +41270,20 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const fs = __importStar(__nccwpck_require__(9896));
-const path = __importStar(__nccwpck_require__(6928));
 const core_1 = __nccwpck_require__(7484);
 const minimatch_1 = __nccwpck_require__(6507);
 const handlebars_1 = __importDefault(__nccwpck_require__(8508));
+function normalizeGitHubPath(filePath) {
+    return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+}
+function joinGitHubPath(...parts) {
+    return normalizeGitHubPath(parts.filter(part => part !== undefined && part !== '').join('/'));
+}
+function isPathInFolder(filePath, folder) {
+    const normalizedPath = normalizeGitHubPath(filePath);
+    const normalizedFolder = normalizeGitHubPath(folder).replace(/\/$/, '');
+    return normalizedPath === normalizedFolder || normalizedPath.startsWith(`${normalizedFolder}/`);
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -41332,7 +41342,7 @@ function run() {
                 return;
             }
             core.info('Got rules');
-            const samplesFolder = validationRules.contributionsFolder || 'samples';
+            const samplesFolder = normalizeGitHubPath(validationRules.contributionsFolder || 'samples').replace(/\/$/, '');
             const affectsOnlyOneFolder = validationRules.limitToSingleFolder || undefined;
             const sampleFolderNameRule = validationRules.folderName;
             const acceptedFolders = (sampleFolderNameRule === null || sampleFolderNameRule === void 0 ? void 0 : sampleFolderNameRule.acceptedFolders) || [];
@@ -41352,13 +41362,13 @@ function run() {
                 core.info(`- ${file.filename}`);
             }
             // Filter to files under "samples/"
-            const sampleFiles = files.map(f => f.filename).filter(f => f.startsWith(`${samplesFolder}/`));
+            const sampleFiles = files.map(f => normalizeGitHubPath(f.filename)).filter(f => isPathInFolder(f, samplesFolder));
             core.info(`Changed ${sampleFiles.length} files under the "${samplesFolder}" folder.`);
             // Determine the sample folders (considering full path structure)
             const sampleFolders = new Set();
             sampleFiles.forEach(include => {
-                const relativePath = path.relative(samplesFolder, include);
-                const parts = relativePath.split(path.sep);
+                const relativePath = include.substring(`${samplesFolder}/`.length);
+                const parts = relativePath.split('/');
                 if (parts.length > 0) {
                     sampleFolders.add(parts[0]);
                 }
@@ -41369,7 +41379,7 @@ function run() {
             // Verify that only one folder is affected
             if (affectsOnlyOneFolder) {
                 // Check if there are any files outside the "samples/" folder
-                const filesOutsideSamples = files.map(f => f.filename).filter(f => !f.startsWith(`${samplesFolder}/`));
+                const filesOutsideSamples = files.map(f => normalizeGitHubPath(f.filename)).filter(f => !isPathInFolder(f, samplesFolder));
                 if (filesOutsideSamples.length > 0) {
                     core.info(`Contains files outside the "${samplesFolder}" folder.`);
                 }
@@ -41384,7 +41394,7 @@ function run() {
             // Verify the sample folder name
             const sampleName = Array.from(sampleFolders)[0];
             core.info(`Sample: ${sampleName}`);
-            const samplePath = path.join(samplesFolder, sampleName);
+            const samplePath = joinGitHubPath(samplesFolder, sampleName);
             core.info(`Sample folder: ${samplePath}`);
             if (sampleFolderNameRule) {
                 // Make sure the sample is named correctly
@@ -41397,9 +41407,13 @@ function run() {
                 });
                 core.info(`Sample name is valid: ${isValidSampleName}`);
             }
+            // Combine files already present in the base sample folder with files changed by the PR.
+            const baseSha = pr.base.sha;
+            const combinedFiles = yield getEffectiveSampleFiles(octokit, owner, repo, baseSha, samplePath, files);
+            core.info(`Combined files for validation: ${Array.from(combinedFiles).join(', ')}`);
             // Validate README.md content
             if (requireVisitorStats) {
-                const readmeFile = sampleFiles.find(f => f === path.join(samplesFolder, sampleName, 'README.md'));
+                const readmeFile = Array.from(combinedFiles).find(f => f === joinGitHubPath(samplesFolder, sampleName, 'README.md'));
                 const hasReadme = readmeFile !== undefined;
                 var hasImageTracker = false;
                 core.info(`README.md exists: ${hasReadme}`);
@@ -41436,8 +41450,8 @@ function run() {
                         core.warning(`Invalid rule: ${rule}`);
                         continue;
                     }
-                    const fullPath = path.join(samplesFolder, sampleName, pattern);
-                    const fileExists = sampleFiles.some(f => (0, minimatch_1.minimatch)(f, fullPath));
+                    const fullPath = joinGitHubPath(samplesFolder, sampleName, pattern);
+                    const fileExists = Array.from(combinedFiles).some(f => (0, minimatch_1.minimatch)(f, fullPath));
                     const isValid = isExclude ? !fileExists : fileExists;
                     core.info(`${rule} exists: ${fileExists} valid: ${isValid}`);
                     validationResults.push({
@@ -41495,6 +41509,57 @@ function getFileContent(octokit, owner, repo, path, ref) {
             core.error(`Error fetching content from ${path}: ${error}`);
         }
         return null;
+    });
+}
+function getEffectiveSampleFiles(octokit, owner, repo, baseSha, samplePath, changedFiles) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const baseFiles = yield getBaseBranchFiles(octokit, owner, repo, baseSha, samplePath);
+        const combinedFiles = new Set(baseFiles);
+        for (const file of changedFiles) {
+            const currentFile = normalizeGitHubPath(file.filename);
+            const previousFile = file.previous_filename ? normalizeGitHubPath(file.previous_filename) : undefined;
+            if (previousFile && isPathInFolder(previousFile, samplePath)) {
+                combinedFiles.delete(previousFile);
+            }
+            if (!isPathInFolder(currentFile, samplePath)) {
+                continue;
+            }
+            if (file.status === 'removed') {
+                combinedFiles.delete(currentFile);
+            }
+            else {
+                combinedFiles.add(currentFile);
+            }
+        }
+        return combinedFiles;
+    });
+}
+// Fetch files from the base branch
+function getBaseBranchFiles(octokit, owner, repo, baseSha, folder) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const files = [];
+        try {
+            const { data: commit } = yield octokit.rest.repos.getCommit({
+                owner,
+                repo,
+                ref: baseSha,
+            });
+            const { data: tree } = yield octokit.rest.git.getTree({
+                owner,
+                repo,
+                tree_sha: commit.commit.tree.sha,
+                recursive: true,
+            });
+            for (const item of tree.tree) {
+                if (item.type === 'blob' && item.path && isPathInFolder(item.path, folder)) {
+                    files.push(normalizeGitHubPath(item.path));
+                }
+            }
+        }
+        catch (error) {
+            core.error(`Error fetching files from base branch: ${error}`);
+        }
+        return files;
     });
 }
 run();
